@@ -11,6 +11,7 @@ namespace ContosoPizza
 {
     public class Program
     {
+        public static readonly string SqlCNN = "Server=localhost;database=aula_xp;user=root;password=;SslMode=none";
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();

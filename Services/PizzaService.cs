@@ -3,29 +3,43 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
+using MySql.Data.MySqlClient;
 
 namespace ContosoPizza.Services
 {
     public class PizzaService
     {
-        static List<Pizza> Pizzas { get; }
-        static int nextId = 3;
-        static PizzaService()
-        {
-            Pizzas = new List<Pizza>
-            {
-                new Pizza { Id = 1, Name = "Classic Italian", IsGlutenFree = false },
-                new Pizza { Id = 2, Name = "Veggie", IsGlutenFree = true }
-            };
-        }
 
-        public static List<Pizza> GetAll() => Pizzas;
-        public static Pizza Get(int id) => Pizzas.FirstOrDefault(p => p.Id == id);
+        public static List<Pizza> GetAll()
+        {
+            List<Pizza> pizzas;
+            string query = $"SELECT * FROM pizzas";
+            using (MySqlConnection connection = new MySqlConnection(Program.SqlCNN))
+            {
+                pizzas = connection.Query<Pizza>(query).ToList();
+            }
+
+            return pizzas;
+        }
+        public static Pizza Get(int id)
+        {
+            Pizza pizza = new Pizza();
+            string query = $"SELECT * FROM pizzas WHERE Id = {id}";
+            using (MySqlConnection connection = new MySqlConnection(Program.SqlCNN))
+            {
+                pizza = connection.Query<Pizza>(query).SingleOrDefault();
+            }
+            return pizza;
+        }
 
         public static void Add(Pizza pizza)
         {
-            pizza.Id = nextId++;
-            Pizzas.Add(pizza);
+            string query = "INSERT INTO pizzas(Name, IsGlutenFree) Values(@Name, @IsGlutenFree);";
+            using (MySqlConnection connection = new MySqlConnection(Program.SqlCNN))
+            {
+                connection.Execute(query, pizza);
+            }
         }
 
         public static void Delete(int id)
@@ -36,18 +50,25 @@ namespace ContosoPizza.Services
                 return;
             }
 
-            Pizzas.Remove(pizza);
+            string query = $"DELETE * FROM pizzas WHERE Id = {id}";
+            using (MySqlConnection connection = new MySqlConnection(Program.SqlCNN))
+            {
+                connection.Execute(query);
+            }
         }
 
         public static void Update(Pizza pizza)
         {
-            var index = Pizzas.FindIndex(p => p.Id == pizza.Id);
-            if(index == -1)
+            var result = Get(pizza.Id);
+            if (result is null)
             {
                 return;
             }
-
-            Pizzas[index] = pizza;
+            string query = $"UPDATE pizzas set Name=@Name, IsGlutenFree=@IsGlutenFree WHERE Id = {pizza.Id}";
+            using (MySqlConnection connection = new MySqlConnection(Program.SqlCNN))
+            {
+                connection.Execute(query, pizza);
+            }
         }
     }
 }
